@@ -1,0 +1,159 @@
+---
+title: "p8105_hw2_yc3577"
+author: "Yimeng Cai"
+date: "10/01/2023"
+output: github_document
+---
+
+```{r}
+library(tidyverse)
+library(dplyr)
+library(readxl)
+```
+
+Problem 1
+```{r}
+#Step 1 clean & analyze pols-month data using read_csv to read the data, then use separate function to separate the mon variable into day year month. Then rename the month int data into month names. Finally use mutate to take values of gop and dem into president. Then select related columns and drop na.
+pols_df = 
+  read_csv("fivethirtyeight_datasets/pols-month.csv") |>
+  separate(mon, into = c('year', 'month', 'day'), sep = '-') 
+month_names = 
+  c('Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec')
+pols_df$month = month_names[as.integer(pols_df$month)]
+pols_df = 
+  mutate( pols_df,
+    president = recode(prez_gop, "0" = "dem", "1" = "gop", "2" = "gop"),
+    year = as.integer(year)) |>
+  select(-day, -starts_with("prez")) |>
+  drop_na()
+pols_df
+
+```
+```{r}
+#Step 2 clean & analyze snp data using read_csv to read the data, then use separate function to separate the mon variable into day year month. Then formulate the variable type of month day and year. Use relocate to arrange the column in the orders of year and month. Then select related columns and drop na.
+snp_df = 
+  read_csv("fivethirtyeight_datasets/snp.csv") |>
+  separate(date, into = c('month', 'day', 'year'), sep = '/') |>
+  mutate(
+    month = as.integer(month),
+    day = as.integer(day),
+    year = as.integer(year),
+    month = month(month, label = TRUE),
+    year = ifelse(year<16, year+2000, year+1900)) |>
+  relocate(year, month) |>
+  select(year, month, close) |>
+  drop_na()
+
+snp_df
+```
+```{r}
+#Step 3 clean & analyze unemployment data using read_csv to read the data, then use separate function to separate the mon variable into day year month. Then formulate the variable type of month day and year. Use relocate to arrange the column in the orders of year and month. Then select related columns and drop na.
+unem_df =  
+  read_csv("fivethirtyeight_datasets/unemployment.csv") |>
+  rename(year = Year) |>
+  pivot_longer(
+    Jan:Dec,
+    names_to = "month",
+    values_to = "unemployment"
+  )|>
+  mutate(
+    year = as.integer(year))|>
+  select(year, month, unemployment) |>
+  drop_na()
+
+unem_df
+```
+```{r}
+combined_df1 =
+  left_join(pols_df, snp_df)|>
+  left_join(x = _, y = unem_df)
+combined_df1
+```
+Problem 2
+
+```{r}
+# Step 1 Clean and read Mrtrash data using read_excel and janior clean names. Then use mutate to calculate homes_powered by inputting the function. Finally drop NA data. 
+Mrtrash_df = 
+  read_excel("202309 Trash Wheel Collection Data.xlsx", sheet = 1, range = "A2:N549") |>
+  janitor::clean_names() |>
+  mutate(
+    homes_powered = (weight_tons*500)/30) |>
+  add_column(type = "Mrtrash")|>
+  drop_na(-starts_with("dumpster"))
+Mrtrash_df
+
+# Step 2 Clean and read Proftrash data using read_excel and janior clean names. Then use mutate to calculate homes_powered by inputting the function. Then formulate the year column into character. Finally drop NA data.
+Proftrash_df = 
+  read_excel("202309 Trash Wheel Collection Data.xlsx", sheet = 2) |>
+  janitor::clean_names() |>
+  mutate(
+    homes_powered = (weight_tons*500)/30,
+    year = as.character(year))|>
+  add_column(type = "Proftrash")|>
+  drop_na(-starts_with("dumpster"))
+Proftrash_df
+
+# Step 3 Clean and read Gwytrash data using read_excel and janior clean names. Then use mutate to calculate homes_powered by inputting the function. Then formulate the year column into character. Finally drop NA data.
+Gwytrash_df = 
+  read_excel("202309 Trash Wheel Collection Data.xlsx", sheet = 4) |>
+  janitor::clean_names() |>
+  mutate(
+    homes_powered = (weight_tons*500)/30,
+    year = as.character(year))|>
+  add_column(type = "Gwytrash")|>
+  drop_na(-starts_with("dumpster"))
+Gwytrash_df
+
+# Step 4 Combine 3 df using left join twice. 
+combine_df2 = 
+  bind_rows(Mrtrash_df, Proftrash_df) |>
+  bind_rows(x = _, y = Gwytrash_df)
+combine_df2
+```
+Problem 3
+
+```{r}
+base_df = 
+  read_csv("/Users/christinecym/Desktop/R data/P8105/HW/P8105_hw2_yc3577/data_mci/MCI_baseline.csv", skip =1) |>
+  janitor::clean_names()|>
+  mutate(
+    sex = recode(sex, "0" = "F", "1" = "M"),
+    apoe4 = recode(apoe4, "0" = "apoe4_noncarrier", "1" = "apoe4_carrier"),
+    age_at_onset = ifelse(age_at_onset == ".", NA, age_at_onset)
+    )|>
+  filter(current_age < age_at_onset | is.na(age_at_onset))
+  
+  
+
+base_df
+```
+```{r}
+amy_df = 
+  read_csv("/Users/christinecym/Desktop/R data/P8105/HW/P8105_hw2_yc3577/data_mci/mci_amyloid.csv", skip =1) |>
+  janitor::clean_names() |>
+  rename(
+    id = study_id,
+    time_0 = baseline
+  )|>
+  pivot_longer(
+    time_0:time_8,
+    names_to = "period_time",
+    values_to = "year") |>
+  drop_na()
+
+amy_df
+```
+```{r}
+combine_df3 =
+  anti_join(base_df, amy_df)
+combine_df3
+
+combine_df4 = 
+  anti_join(amy_df, base_df)
+combine_df4
+
+combine_df5 =
+  inner_join(base_df, amy_df)
+combine_df5
+```
+
