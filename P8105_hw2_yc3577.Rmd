@@ -85,6 +85,7 @@ Mrtrash_df =
   add_column(type = "Mrtrash")|>
   drop_na(starts_with("dumpster"))
 Mrtrash_df
+sum(Mrtrash_df['weight_tons'])
 ```
 
 Step 2 Clean and read Proftrash data using `read_excel` and `clean_names`. Then use `mutate` to calculate homes_powered by inputting the function `(weight_tons*500)/30`. Then formulate the year column into character with `as.character(year)`. Use `add_column(type = "Proftrash")` to add additional variable to dataset for later combining usage. Finally drop NA data in dumpster with `drop_na(starts_with("dumpster"))`.
@@ -99,6 +100,7 @@ Proftrash_df =
   drop_na(starts_with("dumpster"))
 
 Proftrash_df
+sum(Proftrash_df['weight_tons'])
 ```
 
 Step 3 Clean and read Gwytrash data using `read_excel` and `clean_names`. Then use `mutate` to calculate homes_powered by inputting the function `(weight_tons*500)/30`. Then formulate the year column into character with `as.character(year)`. Use `add_column(type = "Gwytrash")` to add additional variable to dataset for later combining usage. Finally drop NA data in dumpster with `drop_na(starts_with("dumpster"))`.
@@ -113,6 +115,7 @@ Gwytrash_df =
   drop_na(starts_with("dumpster"))
 
 Gwytrash_df
+sum(Gwytrash_df['weight_tons'])
 ```
 
 Step 4 Combine `Mytrash_df`, `Proftrash_df` using 1st `bind_rows`. Then combine binded dataframe with `Gwytrash_df` using 2nd `bind_rows`.
@@ -120,8 +123,38 @@ Step 4 Combine `Mytrash_df`, `Proftrash_df` using 1st `bind_rows`. Then combine 
 combine_df2 = 
   bind_rows(Mrtrash_df, Proftrash_df) |>
   bind_rows(x = _, y = Gwytrash_df)
+
 combine_df2
 ```
+
+```{r}
+summary(Mrtrash_df)
+var(Mrtrash_df)
+
+summary(Proftrash_df)
+var(Proftrash_df)
+
+summary(Gwytrash_df)
+var(Gwytrash_df)
+
+```
+
+Paragraphs about these data:
+
+We get the basic information from `summary(Mrtrash_df)` MrTrash dataframe has 584 ovbservations and 15 variables. The variables are collection date, dumpster number, dumpster types, and total litters.(e.g.dumpster, month, year, date, weight_tons, volume_cubic_yards). We calculated the `home_powered`. The total weight of trash collected by MRTrash is 1875.1 tons. 
+
+We get the basic information from `summary(Proftrash_df)` Proftrash dataframe has 106 ovbservations and 14 variables. The variables are collection date, dumpster number, dumpster types, and total litters(e.g. dumpster, month, year, date, weight_tons, volume_cubic_yards). We calculated the `home_powered`. The total weight of trash collected by Proftrash is 216.26 tons. 
+
+We get the basic information from `summary(Gwytrash_df)` Gwytrash dataframe has 155 ovbservations and 13 variables. The variables are collection date, dumpster number, dumpster types, and total litters. We calculated the `home_powered`. The total weight of trash collected by Gwytrash is 451.65 tons. 
+
+Answers to the questions: 
+1. What was the total weight of trash collected by Professor Trash Wheel?
+
+The total weight of trash collected by Professor Trash Wheel is 216.26 tons.
+
+2. What was the total number of cigarette butts collected by Gwynnda in July of 2021?
+
+The total number of cigarette butts collected by Gwynnda in July of 2021 is 1.63^4.
 
 
 Problem 3
@@ -137,9 +170,8 @@ base_df =
     age_at_onset = ifelse(age_at_onset == ".", NA, age_at_onset)
     )|>
   filter(current_age < age_at_onset | is.na(age_at_onset))
-  
-
 base_df
+
 ```
 
 Step 2 Read and Clean the `mci_amyloid.csv` of biomarkers using `read_csv` and then use `janitor::clean_names()` to clean the variable names. During table reading, we need to skip the 1st row with `skip = 1`. Then we need to rename the variable name with `rename(id = ..., time_0 = ...)` to make sure we have a common name id, and same format of time_X by change baseline to the time_0. Finally, we need to use `pivot_longer(time0:time8, names_to = ..., values_to = ...)` to make a tidy table with a column named `"period_time"` that includes all the time_period into one column as a new variable. Then finally drop na data with `drop_na()`. 
@@ -175,3 +207,51 @@ combine_df5 =
 combine_df5
 ```
 
+```{r}
+summary(base_df)
+var(base_df)
+
+summary(amy_df)
+var(amy_df)
+
+calculation_df = base_df |>
+  mutate(
+    current_age = as.numeric(current_age),
+    apoe4 = recode(apoe4, "apoe4_noncarrier" = 0, "apoe4_carrier" = 1)
+  )
+calculation_df
+
+mean(calculation_df$current_age)
+sum(calculation_df['apoe4'])
+sum(calculation_df['sex'] == 'F')
+sum(calculation_df['sex'] == 'M')
+sum(calculation_df['apoe4'] == '1')
+
+calc_df = calculation_df |>
+  filter(sex =="F" & apoe4 == "1")
+calc_df
+
+nrow(calc_df)
+
+
+```
+
+Paragraphs about these data:
+
+We get the basic information from `summary(base_df)` base_df dataframe has 479 ovbservations and 6 variables, and it is the dataframe that measures the basic demographic information of baseline samples. The variables are like sex, educations years, APOE4 carrier or not, current_age and the age with MCI onset. (e.g.        id, current_age, sex, education, apoe4, age_at_on_set). 
+
+We get the basic information from `summary(amy_df)` amy_df dataframe has 2272 ovbservations and 3 variables, and it is the dataframe that measures the Time (in years) elapsed since the study baseline to the visit where biomarker Amyloid 42/40 ratio was measured. The variables are like id, period_time, year.
+
+Answers to the questions: 
+1. How many participants were recruited, and of those how many develop MCI?
+
+483 participants were recruited, since there are 483 rows in the original dataset of `MCI_baseline.csv`. Of those, 479 developed MCI.
+
+2. What is the average baseline age?
+
+The average baseline age is 65.0286.
+
+3. What proportion of women in the study are APOE4 carriers?
+
+P(APOE+ & women)/ P(women) = (63/479)/(210/479) = 0.3 = 30%
+The proportion of women in the study are APOE4 carriers is 30%.
